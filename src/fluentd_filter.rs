@@ -8,22 +8,28 @@ pub use std::io;
 pub use std::collections::HashMap;
 pub use msgpack::{
   MsgPack,
+  Map,
   StreamParser
 };
 
 #[macro_export]
 macro_rules! fluentd_filter(
   ($name: ident($input: ident) $block: block) => (
-    fn filter($input: MsgPack) -> Vec<MsgPack> $block
+    fn filter($input: HashMap<String, MsgPack>) -> Vec<HashMap<String, MsgPack>> $block
 
     fn $name() {
       let mut parser = StreamParser::new(io::stdin());
-      for $input in parser {
-        for output in filter($input).iter() {
-          match io::stdout().write(output.clone().into_bytes().as_slice()) {
-            Ok(_) => (),
-            Err(e) => warn!("{}", e)
+      for msgpack in parser {
+        match msgpack {
+          Map(map) => {
+            for output in filter(map).iter() {
+              match io::stdout().write(output.to_msgpack().clone().into_bytes().as_slice()) {
+                Ok(_) => (),
+                Err(e) => warn!("{}", e)
+              }
+            }
           }
+          _ => warn!("Invalid input")
         }
       }
     }
@@ -47,7 +53,7 @@ macro_rules! res(
     $(
       res.insert($key.into_string(), $value.to_msgpack());
     )+
-    vec!(res.to_msgpack())
+    vec!(res)
   })
 )
 
