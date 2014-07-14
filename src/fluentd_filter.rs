@@ -13,10 +13,12 @@ pub use msgpack::{
 #[macro_export]
 macro_rules! fluentd_filter(
   ($name: ident($input: ident) $block: block) => (
+    fn filter($input: MsgPack) -> Vec<MsgPack> $block
+
     fn $name() {
       let mut parser = StreamParser::new(io::stdin());
       for $input in parser {
-        for output in $block.iter() {
+        for output in filter($input).iter() {
           match io::stdout().write(output.clone().into_bytes().as_slice()) {
             Ok(_) => (),
             Err(e) => warn!("{}", e)
