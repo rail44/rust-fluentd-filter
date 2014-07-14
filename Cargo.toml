@@ -1,0 +1,10 @@
+[package]
+name = "fluentd_filter"
+version = "0.0.1"
+authors = ["Satoshi Amemiya"]
+
+[dependencies.msgpack]
+git = "https://github.com/rail44/rust-msgpack.git"
+
+[[lib]]
+name = "fluentd_filter"
