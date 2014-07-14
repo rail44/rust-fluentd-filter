@@ -16,9 +16,11 @@ macro_rules! fluentd_filter(
     fn $name() {
       let mut parser = StreamParser::new(io::stdin());
       for $input in parser {
-        match io::stdout().write($block.into_bytes().as_slice()) {
-          Ok(_) => (),
-          Err(e) => warn!("{}", e)
+        for output in $block.iter() {
+          match io::stdout().write(output.clone().into_bytes().as_slice()) {
+            Ok(_) => (),
+            Err(e) => warn!("{}", e)
+          }
         }
       }
     }
@@ -29,11 +31,11 @@ macro_rules! fluentd_filter(
 mod test {
   use super::*;
 
-  use msgpack::String;
+  use msgpack::ToMsgPack;
 
   fluentd_filter!(
     test_filter(input) {
-      String("test".into_string())
+      vec!("test".into_string().to_msgpack())
     }
   )
   
