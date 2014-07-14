@@ -27,6 +27,16 @@ macro_rules! fluentd_filter(
   )
 )
 
+#[macro_export]
+macro_rules! try_fluentd_filter(
+  ($result: expr) => {
+    match $result {
+      Ok(v) => v,
+      Err(_) => { return vec!() }
+    }
+  }
+)
+
 #[cfg(test)]
 mod test {
   use super::*;
