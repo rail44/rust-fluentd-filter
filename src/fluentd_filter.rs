@@ -5,6 +5,7 @@ extern crate log;
 extern crate msgpack;
 
 pub use std::io;
+pub use std::collections::HashMap;
 pub use msgpack::{
   MsgPack,
   StreamParser
@@ -39,6 +40,17 @@ macro_rules! try_fluentd_filter(
   }
 )
 
+#[macro_export]
+macro_rules! res(
+  ($($key: expr: $value: expr),+) => ({
+    let mut res = HashMap::new();
+    $(
+      res.insert($key.into_string(), $value.to_msgpack());
+    )+
+    vec!(res.to_msgpack())
+  })
+)
+
 #[cfg(test)]
 mod test {
   use super::*;
@@ -47,7 +59,7 @@ mod test {
 
   fluentd_filter!(
     test_filter(input) {
-      vec!("test".into_string().to_msgpack())
+      res!{"tag": "test.test".to_string(), "message": "test message".to_string()}
     }
   )
   
