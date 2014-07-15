@@ -64,11 +64,11 @@ macro_rules! res_if_some(
 )
 
 #[macro_export]
-macro_rules! to_map(
-  ($msgpack: expr) => {
-    match $msgpack {
-      Map(map) => map,
-      _ => return Ok(vec!())
+macro_rules! break_if_none(
+  ($option: expr) => {
+    match $option {
+      Some(v) => v,
+      None => return Ok(vec!())
     }
   }
 )
