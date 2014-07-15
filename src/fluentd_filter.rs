@@ -48,7 +48,7 @@ macro_rules! break_if_err(
   ($result: expr) => {
     match $result {
       Ok(v) => v,
-      Err(_) => { return vec!() }
+      Err(_) => return Ok(vec!())
     }
   }
 )
@@ -57,7 +57,7 @@ macro_rules! break_if_err(
 macro_rules! res_if_some(
   ($option: expr) => {
     match $option {
-      Some(v) => return v,
+      Some(v) => return Ok(v),
       None => ()
     }
   }
@@ -68,7 +68,7 @@ macro_rules! to_map(
   ($msgpack: expr) => {
     match $msgpack {
       Map(map) => map,
-      _ => return vec!()
+      _ => return Ok(vec!())
     }
   }
 )
