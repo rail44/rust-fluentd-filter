@@ -5,6 +5,7 @@ extern crate log;
 extern crate msgpack;
 
 pub use std::io;
+pub use std::io::IoResult;
 pub use std::collections::HashMap;
 pub use msgpack::{
   MsgPack,
@@ -12,20 +13,26 @@ pub use msgpack::{
   StreamParser
 };
 
+pub type Event = HashMap<String, MsgPack>;
+pub type FilterResult = IoResult<Vec<Event>>;
+
 #[macro_export]
 macro_rules! fluentd_filter(
-  ($name: ident($input: ident) $block: block) => (
-    fn filter($input: HashMap<String, MsgPack>) -> Vec<HashMap<String, MsgPack>> $block
-
-    fn $name() {
+  (($input: ident) $block: block) => ({
+    || {
+      let procedure = |$input: Event| -> FilterResult $block;
       let mut parser = StreamParser::new(io::stdin());
       for msgpack in parser {
         match msgpack {
-          Map(map) => {
-            for output in filter(map).iter() {
+          Map(event) => {
+            let res = match procedure(event) {
+              Ok(res) => res,
+              Err(e) => res!{"tag": "error".into_string(), "message": format!("{}", e)}
+            };
+            for output in res.iter() {
               match io::stdout().write(output.to_msgpack().clone().into_bytes().as_slice()) {
                 Ok(_) => (),
-                Err(e) => warn!("{}", e)
+                Err(e) => fail!(e)
               }
             }
           }
@@ -33,7 +40,7 @@ macro_rules! fluentd_filter(
         }
       }
     }
-  )
+  })
 )
 
 #[macro_export]
@@ -83,14 +90,14 @@ mod test {
 
   use msgpack::ToMsgPack;
 
-  fluentd_filter!(
-    test_filter(input) {
-      res!{"tag": "test.test".to_string(), "message": "test message".to_string()}
-    }
-  )
-  
   #[test]
   fn test() {
+    let test_filter = fluentd_filter!(
+      (input) {
+        Ok(res!{"tag": "test.test".to_string(), "message": "test message".to_string()})
+      }
+    );
+    
     test_filter()
   }
 }
