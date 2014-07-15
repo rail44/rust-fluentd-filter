@@ -37,11 +37,21 @@ macro_rules! fluentd_filter(
 )
 
 #[macro_export]
-macro_rules! try_fluentd_filter(
+macro_rules! break_if_err(
   ($result: expr) => {
     match $result {
       Ok(v) => v,
       Err(_) => { return vec!() }
+    }
+  }
+)
+
+#[macro_export]
+macro_rules! res_if_some(
+  ($option: expr) => {
+    match $option {
+      Some(v) => return v,
+      None => ()
     }
   }
 )
