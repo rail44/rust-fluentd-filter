@@ -27,7 +27,7 @@ macro_rules! fluentd_filter(
           Map(event) => {
             let res = match procedure(event) {
               Ok(res) => res,
-              Err(e) => res!{"tag": "error".into_string(), "message": format!("{}", e)}
+              Err(e) => vec!(res!{"tag": "error".into_string(), "message": format!("{}", e)})
             };
             for output in res.iter() {
               match io::stdout().write(output.to_msgpack().clone().into_bytes().as_slice()) {
@@ -80,7 +80,7 @@ macro_rules! res(
     $(
       res.insert($key.into_string(), $value.to_msgpack());
     )+
-    vec!(res)
+    res
   })
 )
 
@@ -94,7 +94,7 @@ mod test {
   fn test() {
     let test_filter = fluentd_filter!(
       (input) {
-        Ok(res!{"tag": "test.test".to_string(), "message": "test message".to_string()})
+        Ok(vec!(res!{"tag": "test.test".to_string(), "message": "test message".to_string()}))
       }
     );
     
