@@ -57,6 +57,16 @@ macro_rules! res_if_some(
 )
 
 #[macro_export]
+macro_rules! to_map(
+  ($msgpack: expr) => {
+    match $msgpack {
+      Map(map) => map,
+      _ => return vec!()
+    }
+  }
+)
+
+#[macro_export]
 macro_rules! res(
   ($($key: expr: $value: expr),+) => ({
     let mut res = HashMap::new();
