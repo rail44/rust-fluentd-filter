@@ -20,23 +20,51 @@ pub type FilterResult = IoResult<Vec<Event>>;
 macro_rules! fluentd_filter(
   (($input: ident) $block: block) => ({
     || {
-      let procedure = |$input: Event| -> FilterResult $block;
-      let mut parser = StreamParser::new(io::stdin());
-      for msgpack in parser {
-        match msgpack {
-          Map(event) => {
-            let res = match procedure(event) {
-              Ok(res) => res,
-              Err(e) => vec!(res!{"tag": "error".into_string(), "message": format!("{}", e)})
-            };
-            for output in res.iter() {
-              match io::stdout().write(output.to_msgpack().clone().into_bytes().as_slice()) {
+      let (in_tx, in_rx): (Sender<Event>, Receiver<Event>) = channel();
+      let (out_tx, out_rx): (Sender<Event>, Receiver<Event>) = channel();
+
+      spawn(proc() {
+        loop {
+          match out_rx.recv_opt() {
+            Ok(output) => {
+              match io::stdout().write(output.to_msgpack().into_bytes().as_slice()) {
                 Ok(_) => (),
                 Err(e) => fail!(e)
               }
             }
+            Err(_) => break
           }
-          _ => warn!("Invalid input")
+        }
+      });
+
+      spawn(proc() {
+        let mut parser = StreamParser::new(io::stdin());
+        for input in parser {
+          let child_in_tx = in_tx.clone();
+          match input {
+            Map(event) => {
+              child_in_tx.send(event);
+            }
+            _ => ()
+          }
+        }
+      });
+
+      let procedure = |$input: Event| -> FilterResult $block;
+
+      loop {
+        match in_rx.recv_opt() {
+          Ok(input) => {
+            let res = match procedure(input) {
+              Ok(res) => res,
+              Err(e) => vec!(res!{"tag": "error".into_string(), "message": format!("{}", e)})
+            };
+            let child_out_tx = out_tx.clone();
+            for output in res.iter() {
+              child_out_tx.send(output.clone());
+            }
+          }
+          Err(_) => break
         }
       }
     }
