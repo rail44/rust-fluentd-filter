@@ -27,7 +27,7 @@ macro_rules! fluentd_filter(
         loop {
           match out_rx.recv_opt() {
             Ok(output) => {
-              match io::stdout().write(output.to_msgpack().into_bytes().as_slice()) {
+              match output.to_msgpack().to_writer(&mut io::stdout()) {
                 Ok(_) => (),
                 Err(e) => fail!(e)
               }
