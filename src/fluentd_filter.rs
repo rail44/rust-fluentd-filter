@@ -50,12 +50,12 @@ macro_rules! fluentd_filter(
         }
       });
 
-      let procedure = |$input: Event| -> FilterResult $block;
+      let procedure = |$input: &Event| -> FilterResult $block;
 
       loop {
         match in_rx.recv_opt() {
           Ok(input) => {
-            let res = match procedure(input) {
+            let res = match procedure(&input) {
               Ok(res) => res,
               Err(e) => vec!(res!{"tag": "error".into_string(), "message": format!("{}", e)})
             };
