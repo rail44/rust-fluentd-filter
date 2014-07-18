@@ -43,7 +43,7 @@ macro_rules! fluentd_filter(
           let child_in_tx = in_tx.clone();
           match input {
             Map(event) => {
-              child_in_tx.send(event);
+              child_in_tx.send(*event);
             }
             _ => ()
           }
