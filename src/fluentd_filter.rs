@@ -3,11 +3,14 @@
 extern crate log;
 
 extern crate msgpack;
+extern crate serialize;
 
 pub use std::io;
 pub use std::io::IoResult;
 pub use std::collections::HashMap;
+pub use serialize::Encodable;
 pub use msgpack::{
+  Encoder,
   MsgPack,
   Map,
   StreamParser
@@ -20,16 +23,15 @@ pub type FilterResult = IoResult<Vec<Event>>;
 macro_rules! fluentd_filter(
   (($input: ident) $block: block) => ({
     || {
-      let (in_tx, in_rx): (Sender<Event>, Receiver<Event>) = channel();
-      let (out_tx, out_rx): (Sender<Event>, Receiver<Event>) = channel();
+      let (in_tx, in_rx): (Sender<Box<Event>>, Receiver<Box<Event>>) = channel();
+      let (out_tx, out_rx): (Sender<Box<Vec<Event>>>, Receiver<Box<Vec<Event>>>) = channel();
 
       spawn(proc() {
         loop {
           match out_rx.recv_opt() {
-            Ok(output) => {
-              match output.to_msgpack().to_writer(&mut io::stdout()) {
-                Ok(_) => (),
-                Err(e) => fail!(e)
+            Ok(res) => {
+              for output in res.iter() {
+                let _ = output.encode(&mut Encoder::new(&mut io::stdout()));
               }
             }
             Err(_) => break
@@ -40,10 +42,9 @@ macro_rules! fluentd_filter(
       spawn(proc() {
         let mut parser = StreamParser::new(io::stdin());
         for input in parser {
-          let child_in_tx = in_tx.clone();
           match input {
             Map(event) => {
-              child_in_tx.send(*event);
+              in_tx.send(event);
             }
             _ => ()
           }
@@ -55,14 +56,11 @@ macro_rules! fluentd_filter(
       loop {
         match in_rx.recv_opt() {
           Ok(input) => {
-            let res = match procedure(&input) {
+            let res = match procedure(&*input) {
               Ok(res) => res,
               Err(e) => vec!(res!{"tag": "error".into_string(), "message": format!("{}", e)})
             };
-            let child_out_tx = out_tx.clone();
-            for output in res.iter() {
-              child_out_tx.send(output.clone());
-            }
+            out_tx.send(box res)
           }
           Err(_) => break
         }
