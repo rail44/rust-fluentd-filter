@@ -58,7 +58,7 @@ macro_rules! fluentd_filter(
           Ok(input) => {
             let res = match procedure(&*input) {
               Ok(res) => res,
-              Err(e) => vec!(res!{"tag": "error".into_string(), "message": format!("{}", e)})
+              Err(e) => vec!(event!{"tag": "error".into_string(), "message": format!("{}", e)})
             };
             out_tx.send(box res)
           }
@@ -100,7 +100,7 @@ macro_rules! break_if_none(
 )
 
 #[macro_export]
-macro_rules! res(
+macro_rules! event(
   ($($key: expr: $value: expr),+) => ({
     let mut res = HashMap::new();
     $(
@@ -120,7 +120,7 @@ mod test {
   fn test() {
     let test_filter = fluentd_filter!(
       (input) {
-        Ok(vec!(res!{"tag": "test.test".to_string(), "message": "test message".to_string()}))
+        Ok(vec!(event!{"tag": "test.test".to_string(), "message": "test message".to_string()}))
       }
     );
     
