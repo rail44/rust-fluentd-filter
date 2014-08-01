@@ -7,7 +7,7 @@ extern crate serialize;
 
 pub use std::io;
 pub use std::io::IoResult;
-pub use std::collections::HashMap;
+pub use std::collections::TreeMap;
 pub use serialize::Encodable;
 pub use msgpack::{
   Encoder,
@@ -16,7 +16,7 @@ pub use msgpack::{
   StreamParser
 };
 
-pub type Event = HashMap<String, MsgPack>;
+pub type Event = TreeMap<String, MsgPack>;
 pub type FilterResult = IoResult<Vec<Event>>;
 
 #[macro_export]
@@ -102,7 +102,7 @@ macro_rules! break_if_none(
 #[macro_export]
 macro_rules! event(
   ($($key: expr: $value: expr),+) => ({
-    let mut res = HashMap::new();
+    let mut res = TreeMap::new();
     $(
       res.insert($key.into_string(), $value.to_msgpack());
     )+
