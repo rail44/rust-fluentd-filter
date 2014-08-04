@@ -1,0 +1,12 @@
+[root]
+name = "fluentd_filter"
+version = "0.0.1"
+dependencies = [
+ "msgpack 0.0.1 (git+https://github.com/rail44/rust-msgpack.git#74e30684e7b5336732f41a80fbf79dc6155ac3b7)",
+]
+
+[[package]]
+name = "msgpack"
+version = "0.0.1"
+source = "git+https://github.com/rail44/rust-msgpack.git#74e30684e7b5336732f41a80fbf79dc6155ac3b7"
+
